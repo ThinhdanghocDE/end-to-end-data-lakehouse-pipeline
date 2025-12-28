@@ -180,6 +180,13 @@ Cac bang giao dich cua he thong e-commerce:
 git clone https://github.com/YOUR_USERNAME/realtime-ecommerce-data-pipeline.git
 cd realtime-ecommerce-data-pipeline
 
+# Sao chep file cau hinh moi truong
+cp .env.example .env
+
+# Sua file .env voi cac thong so cua ban (dac biet la POSTGRES_PASSWORD)
+# notepad .env  # Windows
+# nano .env     # Linux/Mac
+
 # Khoi dong tat ca services
 docker-compose up -d
 

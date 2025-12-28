@@ -4,6 +4,7 @@ Loads curated data from Gold layer into ClickHouse Star Schema.
 """
 
 import os
+from itertools import chain
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
@@ -87,7 +88,7 @@ def load_dim_customers(spark):
         "PR": "Sul", "RS": "Sul", "SC": "Sul"
     }
     
-    region_mapping = create_map([lit(x) for x in sum(state_to_region.items(), ())])
+    region_mapping = create_map([lit(x) for x in chain.from_iterable(state_to_region.items())])
     
     dim_customers = customers \
         .withColumn("customer_key", hash(col("customer_id")).cast("long").bitwiseAND(0x7FFFFFFFFFFFFFFF)) \
@@ -155,7 +156,7 @@ def load_dim_sellers(spark):
         "PR": "Sul", "RS": "Sul", "SC": "Sul"
     }
     
-    region_mapping = create_map([lit(x) for x in sum(state_to_region.items(), ())])
+    region_mapping = create_map([lit(x) for x in chain.from_iterable(state_to_region.items())])
     
     dim_sellers = sellers \
         .withColumn("seller_key", hash(col("seller_id")).cast("long").bitwiseAND(0x7FFFFFFFFFFFFFFF)) \
@@ -189,14 +190,14 @@ def load_fact_orders(spark):
     payment_type_map = {
         "credit_card": 1, "boleto": 2, "voucher": 3, "debit_card": 4
     }
-    payment_mapping = create_map([lit(x) for x in sum(payment_type_map.items(), ())])
+    payment_mapping = create_map([lit(x) for x in chain.from_iterable(payment_type_map.items())])
     
     # Order status mapping
     status_map = {
         "created": 1, "approved": 2, "invoiced": 3, "processing": 4,
         "shipped": 5, "delivered": 6, "unavailable": 7, "canceled": 8
     }
-    status_mapping = create_map([lit(x) for x in sum(status_map.items(), ())])
+    status_mapping = create_map([lit(x) for x in chain.from_iterable(status_map.items())])
     
     fact_orders = fact_base \
         .withColumn("order_key", hash(col("order_id")).cast("long").bitwiseAND(0x7FFFFFFFFFFFFFFF)) \

@@ -6,7 +6,6 @@ __pycache__/
 # Virtual environments
 venv/
 env/
-.env.local
 
 # IDE
 .idea/
@@ -31,7 +30,7 @@ checkpoints/
 # Data files (large files, download separately)
 data/*.csv
 data/*.parquet
-!data/.gitkeep
+data/generated/
 
 # Logs
 *.log
@@ -40,5 +39,7 @@ logs/
 # Jupyter
 .ipynb_checkpoints/
 
-# Credentials (keep .env.example, ignore actual .env)
-# .env is kept for reference but sensitive values should be changed
+# Environment variables (contains secrets)
+.env
+.env.local
+!.env.example

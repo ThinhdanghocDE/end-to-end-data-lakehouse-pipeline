@@ -1,0 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes (will be recreated)
+postgres_data/
+clickhouse_data/
+minio_data/
+redis_data/
+superset_data/
+
+# Spark checkpoints (will be recreated)
+checkpoints/
+
+# Data files (large files, download separately)
+data/*.csv
+data/*.parquet
+!data/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Credentials (keep .env.example, ignore actual .env)
+# .env is kept for reference but sensitive values should be changed

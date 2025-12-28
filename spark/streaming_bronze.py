@@ -91,13 +91,24 @@ def process_cdc_stream(spark, topic):
     bronze_path = f"s3a://{BRONZE_BUCKET}/{table_name}"
     checkpoint_path = f"{CHECKPOINT_DIR}/{table_name}"
     
+    def write_batch(batch_df, batch_id):
+        count = batch_df.count()
+        if count > 0:
+            batch_df.write \
+                .format("delta") \
+                .mode("append") \
+                .option("mergeSchema", "true") \
+                .partitionBy("_source_table") \
+                .save(bronze_path)
+            print(f"[{table_name}] Batch {batch_id}: {count} records written")
+    
     query = parsed_df.writeStream \
-        .format("delta") \
-        .outputMode("append") \
+        .foreachBatch(write_batch) \
         .option("checkpointLocation", checkpoint_path) \
-        .option("mergeSchema", "true") \
-        .partitionBy("_source_table") \
-        .start(bronze_path)
+        .trigger(processingTime="5 seconds") \
+        .start()
+    
+    print(f"  -> Writing to: {bronze_path}")
     
     return query
 

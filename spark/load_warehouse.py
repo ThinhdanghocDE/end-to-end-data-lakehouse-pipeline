@@ -114,6 +114,7 @@ def load_dim_products(spark):
     products = spark.read.format("delta").load(f"s3a://{SILVER_BUCKET}/products")
     
     dim_products = products \
+        .withColumn("product_weight_g", col("product_weight_g").cast("double")) \
         .withColumn("product_key", hash(col("product_id")).cast("long").bitwiseAND(0x7FFFFFFFFFFFFFFF)) \
         .withColumn("product_category_name_english", 
                     coalesce(col("product_category_name"), lit("unknown"))) \

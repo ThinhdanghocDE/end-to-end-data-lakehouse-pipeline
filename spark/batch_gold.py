@@ -55,6 +55,28 @@ def create_orders_enriched(spark):
     payments = read_silver_table(spark, "order_payments")
     reviews = read_silver_table(spark, "order_reviews")
     
+    # Cast timestamp strings to proper timestamps (they come as strings from JSON parsing)
+    orders = orders \
+        .withColumn("order_purchase_timestamp", to_timestamp(col("order_purchase_timestamp").cast("long") / 1000000)) \
+        .withColumn("order_approved_at", to_timestamp(col("order_approved_at").cast("long") / 1000000)) \
+        .withColumn("order_delivered_carrier_date", to_timestamp(col("order_delivered_carrier_date").cast("long") / 1000000)) \
+        .withColumn("order_delivered_customer_date", to_timestamp(col("order_delivered_customer_date").cast("long") / 1000000)) \
+        .withColumn("order_estimated_delivery_date", to_timestamp(col("order_estimated_delivery_date").cast("long") / 1000000))
+    
+    # Cast numeric columns in order_items
+    order_items = order_items \
+        .withColumn("price", col("price").cast("double")) \
+        .withColumn("freight_value", col("freight_value").cast("double"))
+    
+    # Cast payment values
+    payments = payments \
+        .withColumn("payment_value", col("payment_value").cast("double")) \
+        .withColumn("payment_installments", col("payment_installments").cast("int"))
+    
+    # Cast review score
+    reviews = reviews \
+        .withColumn("review_score", col("review_score").cast("int"))
+    
     # Aggregate order items per order
     order_items_agg = order_items.groupBy("order_id").agg(
         count("order_item_id").alias("total_items"),

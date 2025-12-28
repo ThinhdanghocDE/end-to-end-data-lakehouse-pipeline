@@ -51,33 +51,70 @@ def get_primary_key(table_name):
     return pk_mapping.get(table_name, ["id"])
 
 def clean_and_dedupe(df, table_name):
-    """Clean and deduplicate data"""
+    """Clean and deduplicate data from Debezium CDC format"""
     pk_cols = get_primary_key(table_name)
     
-    # Parse the raw JSON value
-    json_df = df.withColumn("parsed", from_json(col("_raw_value"), MapType(StringType(), StringType())))
+    # Parse the raw JSON value (Debezium format has: before, after, source, op, etc.)
+    # First, parse as generic JSON to get the structure
+    parsed_df = df.withColumn("_parsed_json", from_json(col("_raw_value"), MapType(StringType(), StringType())))
     
-    # Flatten the parsed JSON
-    for field in ["__op", "__source_ts_ms", "__deleted"]:
-        json_df = json_df.withColumn(field, col(f"parsed.{field}"))
+    # Extract the 'after' field which contains the actual row data
+    # Also extract 'op' for operation type and 'source' for metadata
+    parsed_df = parsed_df.withColumn("_after_json", col("_parsed_json.after"))
+    parsed_df = parsed_df.withColumn("_op", col("_parsed_json.op"))
+    parsed_df = parsed_df.withColumn("_deleted", 
+        when(col("_parsed_json.__deleted") == "true", lit(True))
+        .when(col("_op") == "d", lit(True))
+        .otherwise(lit(False))
+    )
     
-    # Remove CDC metadata fields and keep business data
-    business_cols = [c for c in json_df.columns if not c.startswith("_") and c != "parsed"]
+    # Parse the 'after' JSON string to get actual column values
+    parsed_df = parsed_df.withColumn("_data", 
+        from_json(col("_after_json"), MapType(StringType(), StringType()))
+    )
     
-    # Deduplicate: keep latest version based on CDC timestamp
+    # If 'after' is null (for delete operations), try to use 'before'
+    parsed_df = parsed_df.withColumn("_data",
+        when(col("_data").isNull(), 
+             from_json(col("_parsed_json.before"), MapType(StringType(), StringType()))
+        ).otherwise(col("_data"))
+    )
+    
+    # Get all keys from the data map and create columns for each
+    # We need to explode the map to get column names dynamically
+    # For now, extract known columns based on table
+    column_mappings = {
+        "customers": ["customer_id", "customer_unique_id", "customer_zip_code_prefix", "customer_city", "customer_state"],
+        "sellers": ["seller_id", "seller_zip_code_prefix", "seller_city", "seller_state"],
+        "products": ["product_id", "product_category_name", "product_name_length", "product_description_length", 
+                     "product_photos_qty", "product_weight_g", "product_length_cm", "product_height_cm", "product_width_cm"],
+        "orders": ["order_id", "customer_id", "order_status", "order_purchase_timestamp", "order_approved_at",
+                   "order_delivered_carrier_date", "order_delivered_customer_date", "order_estimated_delivery_date"],
+        "order_items": ["order_id", "order_item_id", "product_id", "seller_id", "shipping_limit_date", "price", "freight_value"],
+        "order_payments": ["order_id", "payment_sequential", "payment_type", "payment_installments", "payment_value"],
+        "order_reviews": ["review_id", "order_id", "review_score", "review_comment_title", "review_comment_message",
+                          "review_creation_date", "review_answer_timestamp"]
+    }
+    
+    # Extract each column from the data map
+    cols_to_extract = column_mappings.get(table_name, [])
+    for col_name in cols_to_extract:
+        parsed_df = parsed_df.withColumn(col_name, col(f"_data.{col_name}"))
+    
+    # Deduplicate: keep latest version based on Kafka timestamp
     window = Window.partitionBy(*pk_cols).orderBy(col("_kafka_timestamp").desc())
     
-    deduped_df = json_df \
+    deduped_df = parsed_df \
         .withColumn("_row_num", row_number().over(window)) \
         .filter(col("_row_num") == 1) \
         .drop("_row_num")
     
-    # Filter out deleted records (or mark them)
-    # For SCD Type 1, we simply exclude deleted records
-    # For SCD Type 2, we would keep them with a flag
-    final_df = deduped_df.filter(
-        (col("__deleted").isNull()) | (col("__deleted") != "true")
-    )
+    # Filter out deleted records
+    final_df = deduped_df.filter(col("_deleted") == False)
+    
+    # Select only business columns plus metadata
+    select_cols = cols_to_extract + ["_kafka_timestamp", "_op"]
+    final_df = final_df.select(*select_cols)
     
     # Add Silver layer metadata
     final_df = final_df \

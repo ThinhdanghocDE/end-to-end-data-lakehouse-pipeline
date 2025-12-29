@@ -138,7 +138,7 @@ def create_orders_enriched(spark):
             reviews_first["review_score"],
             
             # Derived fields
-            (col("total_price") + col("total_freight")).alias("order_total"),
+            (coalesce(col("total_price"), lit(0)) + coalesce(col("total_freight"), lit(0))).alias("order_total"),
             datediff(col("order_delivered_customer_date"), col("order_purchase_timestamp")).alias("delivery_days"),
             datediff(col("order_delivered_customer_date"), col("order_estimated_delivery_date")).alias("delivery_delay_days"),
             

@@ -17,7 +17,7 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 BRONZE_BUCKET = os.getenv("BRONZE_BUCKET", "bronze")
 SILVER_BUCKET = os.getenv("SILVER_BUCKET", "silver")
 
-TABLES = ["customers", "sellers", "products", "orders", "order_items", "order_payments", "order_reviews"]
+TABLES = ["customers", "sellers", "products", "product_categories", "orders", "order_items", "order_payments", "order_reviews"]
 
 def create_spark_session():
     """Create Spark session with Delta Lake and S3 support"""
@@ -43,6 +43,7 @@ def get_primary_key(table_name):
         "customers": ["customer_id"],
         "sellers": ["seller_id"],
         "products": ["product_id"],
+        "product_categories": ["category_name"],
         "orders": ["order_id"],
         "order_items": ["order_id", "order_item_id"],
         "order_payments": ["order_id", "payment_sequential"],
@@ -88,6 +89,7 @@ def clean_and_dedupe(df, table_name):
         "sellers": ["seller_id", "seller_zip_code_prefix", "seller_city", "seller_state"],
         "products": ["product_id", "product_category_name", "product_name_length", "product_description_length", 
                      "product_photos_qty", "product_weight_g", "product_length_cm", "product_height_cm", "product_width_cm"],
+        "product_categories": ["category_name", "category_name_english"],
         "orders": ["order_id", "customer_id", "order_status", "order_purchase_timestamp", "order_approved_at",
                    "order_delivered_carrier_date", "order_delivered_customer_date", "order_estimated_delivery_date"],
         "order_items": ["order_id", "order_item_id", "product_id", "seller_id", "shipping_limit_date", "price", "freight_value"],

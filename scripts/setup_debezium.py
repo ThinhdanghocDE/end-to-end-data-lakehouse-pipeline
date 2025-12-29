@@ -33,7 +33,7 @@ def get_connector_config():
             "slot.name": "debezium_ecommerce_slot",
             "publication.name": "dbz_publication",
             "publication.autocreate.mode": "filtered",
-            "table.include.list": "public.customers,public.sellers,public.products,public.orders,public.order_items,public.order_payments,public.order_reviews",
+            "table.include.list": "public.customers,public.sellers,public.products,public.product_categories,public.orders,public.order_items,public.order_payments,public.order_reviews",
             "key.converter": "org.apache.kafka.connect.json.JsonConverter",
             "key.converter.schemas.enable": "false",
             "value.converter": "org.apache.kafka.connect.json.JsonConverter",

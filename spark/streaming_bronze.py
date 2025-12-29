@@ -21,6 +21,7 @@ CDC_TOPICS = [
     "ecommerce.public.customers",
     "ecommerce.public.sellers", 
     "ecommerce.public.products",
+    "ecommerce.public.product_categories",  # Added: needed for product category English names
     "ecommerce.public.orders",
     "ecommerce.public.order_items",
     "ecommerce.public.order_payments",

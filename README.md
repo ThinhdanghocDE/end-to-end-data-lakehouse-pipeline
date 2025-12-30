@@ -139,31 +139,6 @@ ecommerce_data_platform/
 
 ---
 
-## Mo Hinh Du Lieu
-
-### Database Nguon (PostgreSQL - 3NF)
-
-Cac bang giao dich cua he thong e-commerce:
-- `customers` - Thong tin khach hang
-- `sellers` - Thong tin nguoi ban
-- `products` - Danh muc san pham
-- `orders` - Don hang
-- `order_items` - Chi tiet don hang
-- `order_payments` - Thanh toan
-- `order_reviews` - Danh gia
-
-### Data Warehouse (ClickHouse - Star Schema)
-
-**Fact Table:**
-- `fact_orders` - Chua cac so lieu: tong tien, so luong, phi van chuyen
-
-**Dimension Tables:**
-- `dim_customers` - Thong tin khach hang, vi tri dia ly
-- `dim_products` - Thong tin san pham, danh muc
-- `dim_sellers` - Thong tin nguoi ban
-- `dim_time` - Chieu thoi gian (ngay, thang, quy, nam)
-
----
 
 ## Huong Dan Cai Dat
 
@@ -226,44 +201,6 @@ python spark/load_warehouse.py
 | Kafka UI | http://localhost:8082 | - |
 | MinIO Console | http://localhost:9003 | minioadmin / minioadmin |
 | ClickHouse | http://localhost:8124 | default / (khong co mat khau) |
-
----
-
-## Truy Van Mau
-
-```sql
--- Doanh thu theo thang
-SELECT 
-    toStartOfMonth(order_date) as thang,
-    sum(total_amount) as doanh_thu,
-    count(DISTINCT order_id) as so_don_hang
-FROM fact_orders
-GROUP BY thang
-ORDER BY thang;
-
--- Top 10 danh muc theo doanh thu
-SELECT 
-    p.category as danh_muc,
-    sum(f.total_amount) as doanh_thu,
-    count(*) as so_don
-FROM fact_orders f
-JOIN dim_products p ON f.product_key = p.product_key
-GROUP BY danh_muc
-ORDER BY doanh_thu DESC
-LIMIT 10;
-```
-
----
-
-## Ket Qua Dat Duoc
-
-1. **Xu ly thoi gian thuc**: Du lieu duoc cap nhat trong vong vai giay sau khi co thay doi
-2. **Kha nang mo rong**: Kien truc cho phep xu ly hang trieu su kien moi ngay
-3. **Du lieu co cau truc**: Medallion architecture dam bao chat luong du lieu qua tung layer
-4. **Phan tich nhanh**: ClickHouse cho phep truy van tren hang ty ban ghi trong vai giay
-5. **Toan ven du lieu**: CDC dam bao khong mat bat ky thay doi nao
-
----
 
 ## Tai Lieu Tham Khao
 
